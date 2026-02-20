@@ -5,10 +5,12 @@
     "guidelines": true,
     "herd_mcp": true,
     "mcp": true,
-    "nightwatch_mcp": false,
+    "nightwatch_mcp": true,
     "sail": false,
     "skills": [
         "wayfinder-development",
-        "pest-testing"
+        "pest-testing",
+        "inertia-react-development",
+        "tailwindcss-development"
     ]
 }

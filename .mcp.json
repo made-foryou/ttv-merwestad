@@ -15,6 +15,10 @@
             "env": {
                 "SITE_PATH": "/Users/made/git/made-foryou/ttv-merwestad"
             }
+        },
+        "nightwatch": {
+            "type": "http",
+            "url": "https://nightwatch.laravel.com/mcp"
         }
     }
 }
