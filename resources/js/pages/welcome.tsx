@@ -322,7 +322,7 @@ export default function Welcome() {
                                 }}
                             >
                                 <span className="h-2 w-2 animate-pulse rounded-full bg-[#3b82f6]" />
-                                Tafeltennisvereniging Dordrecht
+                                Tafeltennisvereniging in Dordrecht
                             </div>
 
                             {/* Main heading */}
