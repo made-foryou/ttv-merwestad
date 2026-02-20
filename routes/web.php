@@ -11,9 +11,3 @@ Route::get('/', function () {
 Route::post('contact', ContactController::class)
     ->middleware('throttle:5,1')
     ->name('contact.store');
-
-Route::get('dashboard', function () {
-    return Inertia::render('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
-
-require __DIR__.'/settings.php';
