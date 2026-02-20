@@ -108,6 +108,7 @@ export default function Welcome() {
     const navLinks = [
         { label: 'Over ons', href: '#over-ons' },
         { label: 'Trainingstijden', href: '#trainingstijden' },
+        { label: 'Onze teams', href: '#teams' },
         { label: 'Lid worden', href: '#lid-worden' },
         { label: 'Contact', href: '#contact' },
     ];
@@ -780,6 +781,7 @@ export default function Welcome() {
                                             e.preventDefault();
                                             contactForm.post(
                                                 ContactController.url(),
+                                                { preserveScroll: true },
                                             );
                                         }}
                                         className="rounded-2xl border border-[#0a1628]/[0.06] bg-white p-8 shadow-xl shadow-[#1a4fd4]/[0.04] md:p-10"
