@@ -1,10 +1,8 @@
-import { Head } from '@inertiajs/react';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { Head, useForm } from '@inertiajs/react';
 import {
     Users,
     Trophy,
     Heart,
-    Zap,
     Clock,
     MapPin,
     Mail,
@@ -16,6 +14,8 @@ import {
     ExternalLink,
     FileText,
 } from 'lucide-react';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import ContactController from '@/actions/App/Http/Controllers/ContactController';
 
 /* ─── Scroll-triggered animation hook ─── */
 function useInView(threshold = 0.15) {
@@ -97,8 +97,7 @@ function NetDivider() {
 export default function Welcome() {
     const [scrolled, setScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-    const [contactForm, setContactForm] = useState({ name: '', email: '', message: '' });
-    const [contactSent, setContactSent] = useState(false);
+    const contactForm = useForm({ name: '', email: '', message: '' });
 
     useEffect(() => {
         const onScroll = () => setScrolled(window.scrollY > 50);
@@ -749,7 +748,7 @@ export default function Welcome() {
 
                             {/* Right: form */}
                             <Reveal delay={150}>
-                                {contactSent ? (
+                                {contactForm.recentlySuccessful ? (
                                     <div className="rounded-2xl border border-[#1a4fd4]/10 bg-white p-10 text-center shadow-xl shadow-[#1a4fd4]/[0.04]">
                                         <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#1a4fd4]/10">
                                             <Mail className="h-6 w-6 text-[#1a4fd4]" />
@@ -761,23 +760,15 @@ export default function Welcome() {
                                                     "'Plus Jakarta Sans', sans-serif",
                                             }}
                                         >
-                                            Je e-mailclient wordt geopend
+                                            Bericht verstuurd!
                                         </h3>
                                         <p className="mb-6 text-sm text-[#0a1628]/50">
-                                            Je bericht is klaargemaakt in je
-                                            e-mailprogramma. Druk op verzenden
-                                            om het te versturen.
+                                            Bedankt voor je bericht. We nemen zo
+                                            snel mogelijk contact met je op.
                                         </p>
                                         <button
                                             type="button"
-                                            onClick={() => {
-                                                setContactSent(false);
-                                                setContactForm({
-                                                    name: '',
-                                                    email: '',
-                                                    message: '',
-                                                });
-                                            }}
+                                            onClick={() => contactForm.reset()}
                                             className="text-sm font-medium text-[#1a4fd4] transition-colors hover:text-[#1539a3]"
                                         >
                                             Nieuw bericht sturen
@@ -787,14 +778,9 @@ export default function Welcome() {
                                     <form
                                         onSubmit={(e) => {
                                             e.preventDefault();
-                                            const subject = encodeURIComponent(
-                                                `Contactformulier: bericht van ${contactForm.name}`,
+                                            contactForm.post(
+                                                ContactController.url(),
                                             );
-                                            const body = encodeURIComponent(
-                                                `Naam: ${contactForm.name}\nE-mail: ${contactForm.email}\n\n${contactForm.message}`,
-                                            );
-                                            window.location.href = `mailto:info@ttvmerwestad.nl?subject=${subject}&body=${body}`;
-                                            setContactSent(true);
                                         }}
                                         className="rounded-2xl border border-[#0a1628]/[0.06] bg-white p-8 shadow-xl shadow-[#1a4fd4]/[0.04] md:p-10"
                                     >
@@ -811,19 +797,28 @@ export default function Welcome() {
                                                     <input
                                                         id="contact-name"
                                                         type="text"
-                                                        required
-                                                        value={contactForm.name}
+                                                        value={
+                                                            contactForm.data
+                                                                .name
+                                                        }
                                                         onChange={(e) =>
-                                                            setContactForm({
-                                                                ...contactForm,
-                                                                name: e.target
-                                                                    .value,
-                                                            })
+                                                            contactForm.setData(
+                                                                'name',
+                                                                e.target.value,
+                                                            )
                                                         }
                                                         placeholder="Je volledige naam"
-                                                        className="w-full rounded-xl border border-[#0a1628]/10 bg-[#f8fafc] py-3 pr-4 pl-10 text-sm text-[#0a1628] placeholder-[#0a1628]/30 transition-all outline-none focus:border-[#1a4fd4]/40 focus:ring-2 focus:ring-[#1a4fd4]/10"
+                                                        className={`w-full rounded-xl border bg-[#f8fafc] py-3 pr-4 pl-10 text-sm text-[#0a1628] placeholder-[#0a1628]/30 transition-all outline-none focus:border-[#1a4fd4]/40 focus:ring-2 focus:ring-[#1a4fd4]/10 ${contactForm.errors.name ? 'border-red-400' : 'border-[#0a1628]/10'}`}
                                                     />
                                                 </div>
+                                                {contactForm.errors.name && (
+                                                    <p className="mt-1 text-xs text-red-500">
+                                                        {
+                                                            contactForm.errors
+                                                                .name
+                                                        }
+                                                    </p>
+                                                )}
                                             </div>
                                             <div>
                                                 <label
@@ -837,21 +832,28 @@ export default function Welcome() {
                                                     <input
                                                         id="contact-email"
                                                         type="email"
-                                                        required
                                                         value={
-                                                            contactForm.email
+                                                            contactForm.data
+                                                                .email
                                                         }
                                                         onChange={(e) =>
-                                                            setContactForm({
-                                                                ...contactForm,
-                                                                email: e.target
-                                                                    .value,
-                                                            })
+                                                            contactForm.setData(
+                                                                'email',
+                                                                e.target.value,
+                                                            )
                                                         }
                                                         placeholder="naam@voorbeeld.nl"
-                                                        className="w-full rounded-xl border border-[#0a1628]/10 bg-[#f8fafc] py-3 pr-4 pl-10 text-sm text-[#0a1628] placeholder-[#0a1628]/30 transition-all outline-none focus:border-[#1a4fd4]/40 focus:ring-2 focus:ring-[#1a4fd4]/10"
+                                                        className={`w-full rounded-xl border bg-[#f8fafc] py-3 pr-4 pl-10 text-sm text-[#0a1628] placeholder-[#0a1628]/30 transition-all outline-none focus:border-[#1a4fd4]/40 focus:ring-2 focus:ring-[#1a4fd4]/10 ${contactForm.errors.email ? 'border-red-400' : 'border-[#0a1628]/10'}`}
                                                     />
                                                 </div>
+                                                {contactForm.errors.email && (
+                                                    <p className="mt-1 text-xs text-red-500">
+                                                        {
+                                                            contactForm.errors
+                                                                .email
+                                                        }
+                                                    </p>
+                                                )}
                                             </div>
                                         </div>
 
@@ -864,25 +866,39 @@ export default function Welcome() {
                                             </label>
                                             <textarea
                                                 id="contact-message"
-                                                required
                                                 rows={5}
-                                                value={contactForm.message}
+                                                value={
+                                                    contactForm.data.message
+                                                }
                                                 onChange={(e) =>
-                                                    setContactForm({
-                                                        ...contactForm,
-                                                        message: e.target.value,
-                                                    })
+                                                    contactForm.setData(
+                                                        'message',
+                                                        e.target.value,
+                                                    )
                                                 }
                                                 placeholder="Schrijf hier je bericht..."
-                                                className="w-full resize-none rounded-xl border border-[#0a1628]/10 bg-[#f8fafc] px-4 py-3 text-sm text-[#0a1628] placeholder-[#0a1628]/30 transition-all outline-none focus:border-[#1a4fd4]/40 focus:ring-2 focus:ring-[#1a4fd4]/10"
+                                                className={`w-full resize-none rounded-xl border bg-[#f8fafc] px-4 py-3 text-sm text-[#0a1628] placeholder-[#0a1628]/30 transition-all outline-none focus:border-[#1a4fd4]/40 focus:ring-2 focus:ring-[#1a4fd4]/10 ${contactForm.errors.message ? 'border-red-400' : 'border-[#0a1628]/10'}`}
                                             />
+                                            {contactForm.errors.message && (
+                                                <p className="mt-1 text-xs text-red-500">
+                                                    {
+                                                        contactForm.errors
+                                                            .message
+                                                    }
+                                                </p>
+                                            )}
                                         </div>
 
                                         <button
                                             type="submit"
-                                            className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1a4fd4] px-6 py-3.5 text-sm font-semibold text-white transition-all hover:bg-[#1539a3] hover:shadow-lg hover:shadow-[#1a4fd4]/20 sm:w-auto"
+                                            disabled={
+                                                contactForm.processing
+                                            }
+                                            className="group inline-flex w-full items-center justify-center gap-2 rounded-xl bg-[#1a4fd4] px-6 py-3.5 text-sm font-semibold text-white transition-all hover:bg-[#1539a3] hover:shadow-lg hover:shadow-[#1a4fd4]/20 disabled:opacity-50 sm:w-auto"
                                         >
-                                            Verstuur bericht
+                                            {contactForm.processing
+                                                ? 'Versturen...'
+                                                : 'Verstuur bericht'}
                                             <Send className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                                         </button>
                                     </form>

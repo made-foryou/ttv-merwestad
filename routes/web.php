@@ -1,14 +1,16 @@
 <?php
 
+use App\Http\Controllers\ContactController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
-use Laravel\Fortify\Features;
 
 Route::get('/', function () {
-    return Inertia::render('welcome', [
-        'canRegister' => Features::enabled(Features::registration()),
-    ]);
+    return Inertia::render('welcome');
 })->name('home');
+
+Route::post('contact', ContactController::class)
+    ->middleware('throttle:5,1')
+    ->name('contact.store');
 
 Route::get('dashboard', function () {
     return Inertia::render('dashboard');
