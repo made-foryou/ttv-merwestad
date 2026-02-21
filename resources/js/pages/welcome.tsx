@@ -13,6 +13,8 @@ import {
     User,
     ExternalLink,
     FileText,
+    Car,
+    Building2,
 } from 'lucide-react';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import ContactController from '@/actions/App/Http/Controllers/ContactController';
@@ -109,6 +111,7 @@ export default function Welcome() {
         { label: 'Over ons', href: '#over-ons' },
         { label: 'Trainingstijden', href: '#trainingstijden' },
         { label: 'Onze teams', href: '#teams' },
+        { label: 'Locatie', href: '#locatie' },
         { label: 'Lid worden', href: '#lid-worden' },
         { label: 'Contact', href: '#contact' },
     ];
@@ -625,6 +628,86 @@ export default function Welcome() {
                                     </a>
                                 </Reveal>
                             ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* ═══ LOCATIE / BEREIKBAARHEID ═══ */}
+                <section id="locatie" className="bg-white py-24 lg:py-32">
+                    <div className="mx-auto max-w-7xl px-6">
+                        <Reveal>
+                            <SectionHeading
+                                eyebrow="Locatie"
+                                title="Zo vind je ons"
+                                description="We spelen in het gebouw van Mountain Network op het Leerpark in Dordrecht. Hieronder zie je precies waar je kunt parkeren en hoe je bij de ingang komt."
+                            />
+                        </Reveal>
+
+                        <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
+                            {/* Satellite image */}
+                            <Reveal>
+                                <div className="overflow-hidden rounded-2xl border border-[#0a1628]/[0.06] shadow-xl shadow-[#1a4fd4]/[0.04]">
+                                    <img
+                                        src="/map.png"
+                                        alt="Satellietbeeld van de locatie van TTV Merwestad bij Mountain Network op het Leerpark in Dordrecht"
+                                        className="h-auto w-full"
+                                    />
+                                </div>
+                            </Reveal>
+
+                            {/* Info */}
+                            <div className="space-y-6">
+                                <Reveal delay={100}>
+                                    <div className="group rounded-2xl border border-[#0a1628]/[0.06] bg-[#f8fafc] p-7 transition-all duration-300 hover:-translate-y-1 hover:border-[#1a4fd4]/20 hover:shadow-xl hover:shadow-[#1a4fd4]/[0.06]">
+                                        <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[#1a4fd4]/[0.08] text-[#1a4fd4] transition-colors group-hover:bg-[#1a4fd4] group-hover:text-white">
+                                            <Building2 className="h-5 w-5" />
+                                        </div>
+                                        <h3
+                                            className="mb-2 text-lg font-bold text-[#0a1628]"
+                                            style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+                                        >
+                                            Mountain Network
+                                        </h3>
+                                        <p className="text-sm leading-relaxed text-[#0a1628]/50">
+                                            Ons gebouw heet Mountain Network en bevindt zich op het Leerpark in Dordrecht. We zitten in Zaal 1 op de begane grond.
+                                        </p>
+                                    </div>
+                                </Reveal>
+
+                                <Reveal delay={200}>
+                                    <div className="group rounded-2xl border border-[#0a1628]/[0.06] bg-[#f8fafc] p-7 transition-all duration-300 hover:-translate-y-1 hover:border-[#1a4fd4]/20 hover:shadow-xl hover:shadow-[#1a4fd4]/[0.06]">
+                                        <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[#1a4fd4]/[0.08] text-[#1a4fd4] transition-colors group-hover:bg-[#1a4fd4] group-hover:text-white">
+                                            <Car className="h-5 w-5" />
+                                        </div>
+                                        <h3
+                                            className="mb-2 text-lg font-bold text-[#0a1628]"
+                                            style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+                                        >
+                                            Parkeren
+                                        </h3>
+                                        <p className="text-sm leading-relaxed text-[#0a1628]/50">
+                                            Je kunt gratis parkeren aan de achterkant van het gebouw. Let op: de ingang van het gebouw bevindt zich aan de voorkant, aan de kant van het Leerpark.
+                                        </p>
+                                    </div>
+                                </Reveal>
+
+                                <Reveal delay={300}>
+                                    <div className="group rounded-2xl border border-[#0a1628]/[0.06] bg-[#f8fafc] p-7 transition-all duration-300 hover:-translate-y-1 hover:border-[#1a4fd4]/20 hover:shadow-xl hover:shadow-[#1a4fd4]/[0.06]">
+                                        <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[#1a4fd4]/[0.08] text-[#1a4fd4] transition-colors group-hover:bg-[#1a4fd4] group-hover:text-white">
+                                            <MapPin className="h-5 w-5" />
+                                        </div>
+                                        <h3
+                                            className="mb-2 text-lg font-bold text-[#0a1628]"
+                                            style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+                                        >
+                                            Ingang
+                                        </h3>
+                                        <p className="text-sm leading-relaxed text-[#0a1628]/50">
+                                            Loop vanaf de parkeerplaats om het gebouw heen naar de voorzijde (kant Leerpark). Daar vind je de hoofdingang van Mountain Network.
+                                        </p>
+                                    </div>
+                                </Reveal>
+                            </div>
                         </div>
                     </div>
                 </section>
