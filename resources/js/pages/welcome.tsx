@@ -165,7 +165,7 @@ export default function Welcome() {
     ];
 
     const schedule = [
-        { day: 'Dinsdag', time: '19:30 – 23:00', group: ['Vrij spelen', 'reguliere competitie'], color: 'bg-[#3b82f6]' },
+        { day: 'Dinsdag', time: '19:30 – 22:00', group: ['Vrij spelen', 'reguliere competitie'], color: 'bg-[#3b82f6]' },
         { day: 'Donderdag', time: '19:30 – 22:00', group: ['Vrij spelen', 'duo competitie'], color: 'bg-[#93c5fd]' },
     ];
 
