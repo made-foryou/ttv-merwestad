@@ -762,8 +762,9 @@ export default function Welcome() {
                         <Reveal delay={160}>
                             <p className="mx-auto mb-10 max-w-2xl text-lg leading-relaxed text-white/50">
                                 Word lid van TTV Merwestad en ontdek de leukste
-                                tafeltennisvereniging van de regio. De eerste
-                                twee trainingen zijn gratis — kom gerust langs
+                                tafeltennisvereniging van de regio. Je mag als
+                                nieuwkomer 3 keer langs komen om te kijken
+                                of het iets voor je is — kom gerust langs
                                 om kennis te maken.
                             </p>
                         </Reveal>
