@@ -265,10 +265,30 @@ export default function Welcome() {
                 </nav>
 
                 {/* ═══ HERO SECTION ═══ */}
-                <section className="relative min-h-screen overflow-hidden bg-[#0a1628]">
-                    {/* Grid pattern */}
+                <section className="relative h-[80vh] overflow-hidden bg-[#0a1628]">
+                    {/* Background photo */}
+                    <img
+                        src="/photos/PHOTO-2024-12-22-10-48-11.jpg"
+                        alt=""
+                        aria-hidden="true"
+                        className="absolute inset-0 h-full w-full object-cover object-[center_20%] scale-105"
+                    />
+
+                    {/* Dark overlay — strong left-to-right gradient for text readability */}
                     <div
-                        className="absolute inset-0 opacity-[0.07]"
+                        className="absolute inset-0 bg-gradient-to-r from-[#0a1628]/95 via-[#0a1628]/75 to-[#0a1628]/40"
+                        aria-hidden="true"
+                    />
+
+                    {/* Bottom fade for smooth transition to next section */}
+                    <div
+                        className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#0a1628]/90 to-transparent"
+                        aria-hidden="true"
+                    />
+
+                    {/* Subtle grid pattern over photo */}
+                    <div
+                        className="absolute inset-0 opacity-[0.04]"
                         style={{
                             backgroundImage: `
                                 linear-gradient(rgba(26,79,212,0.5) 1px, transparent 1px),
@@ -276,47 +296,11 @@ export default function Welcome() {
                             `,
                             backgroundSize: '80px 80px',
                         }}
-                    />
-
-                    {/* Diagonal accent */}
-                    <div
-                        className="absolute right-0 bottom-0 h-full w-3/5 bg-gradient-to-bl from-[#1a4fd4]/25 to-transparent"
-                        style={{
-                            clipPath:
-                                'polygon(40% 0, 100% 0, 100% 100%, 0% 100%)',
-                        }}
-                        aria-hidden="true"
-                    />
-
-                    {/* Floating balls */}
-                    <div
-                        className="absolute top-[18%] right-[12%] hidden h-36 w-36 rounded-full bg-gradient-to-br from-white/15 to-white/5 lg:block"
-                        style={{
-                            animation: 'float-ball 6s ease-in-out infinite',
-                        }}
-                        aria-hidden="true"
-                    >
-                        <div className="absolute top-0 left-1/2 h-full w-[1.5px] -translate-x-1/2 rotate-[30deg] bg-white/10" />
-                    </div>
-                    <div
-                        className="absolute right-[25%] bottom-[25%] hidden h-12 w-12 rounded-full bg-gradient-to-br from-[#3b82f6]/40 to-[#3b82f6]/10 lg:block"
-                        style={{
-                            animation:
-                                'float-ball 4.5s ease-in-out infinite 1.5s',
-                        }}
-                        aria-hidden="true"
-                    />
-                    <div
-                        className="absolute bottom-[35%] left-[8%] hidden h-20 w-20 rounded-full bg-gradient-to-br from-[#60a5fa]/20 to-transparent lg:block"
-                        style={{
-                            animation:
-                                'float-ball 5s ease-in-out infinite 0.8s',
-                        }}
                         aria-hidden="true"
                     />
 
                     {/* Content */}
-                    <div className="relative mx-auto flex min-h-screen max-w-7xl items-center px-6">
+                    <div className="relative mx-auto flex h-full max-w-7xl items-center px-6">
                         <div className="max-w-3xl pt-24 pb-32 lg:pt-20">
                             {/* Badge */}
                             <div
