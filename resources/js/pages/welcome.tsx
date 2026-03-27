@@ -15,9 +15,24 @@ import {
     FileText,
     Car,
     Building2,
+    ArrowUp,
 } from 'lucide-react';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import ContactController from '@/actions/App/Http/Controllers/ContactController';
+
+/* ─── Reduced motion preference ─── */
+function useReducedMotion() {
+    const [reduced, setReduced] = useState(
+        () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    );
+    useEffect(() => {
+        const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+        const handler = (e: MediaQueryListEvent) => setReduced(e.matches);
+        mq.addEventListener('change', handler);
+        return () => mq.removeEventListener('change', handler);
+    }, []);
+    return reduced;
+}
 
 /* ─── Scroll-triggered animation hook ─── */
 function useInView(threshold = 0.15) {
@@ -43,22 +58,118 @@ function useInView(threshold = 0.15) {
     return { ref, inView };
 }
 
-/* ─── Animated wrapper ─── */
+/* ─── Active nav section tracker ─── */
+function useActiveSection(sectionIds: string[]) {
+    const [active, setActive] = useState('');
+
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            (entries) => {
+                const visible = entries.find((e) => e.isIntersecting);
+                if (visible) setActive(visible.target.id);
+            },
+            { rootMargin: '-30% 0px -60% 0px' },
+        );
+        sectionIds.forEach((id) => {
+            const el = document.getElementById(id);
+            if (el) observer.observe(el);
+        });
+        return () => observer.disconnect();
+    }, [sectionIds]);
+
+    return active;
+}
+
+/* ─── Animated wrapper with direction variants ─── */
+type RevealDirection = 'up' | 'left' | 'right' | 'scale';
+
 function Reveal({
     children,
     className = '',
     delay = 0,
+    direction = 'up',
 }: {
     children: ReactNode;
     className?: string;
     delay?: number;
+    direction?: RevealDirection;
 }) {
     const { ref, inView } = useInView();
+
+    const hiddenClass: Record<RevealDirection, string> = {
+        up: 'translate-y-8 opacity-0',
+        left: '-translate-x-10 opacity-0',
+        right: 'translate-x-10 opacity-0',
+        scale: 'scale-95 opacity-0',
+    };
+
     return (
         <div
             ref={ref}
-            className={`transition-all duration-700 ease-out ${inView ? 'translate-y-0 opacity-100' : 'translate-y-8 opacity-0'} ${className}`}
-            style={{ transitionDelay: `${delay}ms` }}
+            className={`transition-all ease-out ${inView ? 'translate-x-0 translate-y-0 scale-100 opacity-100' : hiddenClass[direction]} ${className}`}
+            style={{
+                transitionDelay: `${delay}ms`,
+                transitionDuration: 'var(--duration-reveal, 800ms)',
+                transitionTimingFunction: 'var(--ease-out-expo, cubic-bezier(0.16, 1, 0.3, 1))',
+            }}
+        >
+            {children}
+        </div>
+    );
+}
+
+/* ─── Count-up animation for stats ─── */
+function CountUp({ target, suffix = '' }: { target: number; suffix?: string }) {
+    const { ref, inView } = useInView(0.5);
+    const [count, setCount] = useState(0);
+    const reducedMotion = useReducedMotion();
+
+    useEffect(() => {
+        if (!inView) return;
+        if (reducedMotion) {
+            requestAnimationFrame(() => setCount(target));
+            return;
+        }
+        const duration = 1500;
+        const startTime = performance.now();
+
+        function step(now: number) {
+            const elapsed = now - startTime;
+            const progress = Math.min(elapsed / duration, 1);
+            const eased = 1 - Math.pow(1 - progress, 4);
+            setCount(Math.round(eased * target));
+            if (progress < 1) requestAnimationFrame(step);
+        }
+        requestAnimationFrame(step);
+    }, [inView, target, reducedMotion]);
+
+    return (
+        <span ref={ref as React.RefObject<HTMLSpanElement>}>
+            {count}{suffix}
+        </span>
+    );
+}
+
+/* ─── Interactive card with cursor glow ─── */
+function GlowCard({ children, className = '' }: { children: ReactNode; className?: string }) {
+    const cardRef = useRef<HTMLDivElement>(null);
+
+    const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+        const card = cardRef.current;
+        if (!card) return;
+        const rect = card.getBoundingClientRect();
+        card.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+        card.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+    }, []);
+
+    return (
+        <div
+            ref={cardRef}
+            onMouseMove={handleMouseMove}
+            className={`group relative overflow-hidden ${className}`}
+            style={{
+                background: 'radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(26, 79, 212, 0.06), transparent 60%)',
+            }}
         >
             {children}
         </div>
@@ -99,13 +210,23 @@ function NetDivider() {
 export default function Welcome() {
     const [scrolled, setScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [heroOffset, setHeroOffset] = useState(0);
+    const [showBackToTop, setShowBackToTop] = useState(false);
     const contactForm = useForm({ name: '', email: '', message: '' });
+    const reducedMotion = useReducedMotion();
+    const activeSection = useActiveSection(['over-ons', 'trainingstijden', 'teams', 'locatie', 'lid-worden', 'contact']);
 
     useEffect(() => {
-        const onScroll = () => setScrolled(window.scrollY > 50);
+        const onScroll = () => {
+            setScrolled(window.scrollY > 50);
+            setShowBackToTop(window.scrollY > 600);
+            if (!reducedMotion) {
+                setHeroOffset(window.scrollY * 0.3);
+            }
+        };
         window.addEventListener('scroll', onScroll, { passive: true });
         return () => window.removeEventListener('scroll', onScroll);
-    }, []);
+    }, [reducedMotion]);
 
     const navLinks = [
         { label: 'Over ons', href: '#over-ons' },
@@ -213,19 +334,31 @@ export default function Welcome() {
 
                         {/* Desktop nav links */}
                         <div className="hidden items-center gap-8 lg:flex">
-                            {navLinks.map((link) => (
-                                <a
-                                    key={link.label}
-                                    href={link.href}
-                                    className={`text-sm font-medium transition-colors hover:text-[#1a4fd4] ${
-                                        scrolled
-                                            ? 'text-[#0a1628]/60'
-                                            : 'text-white/70 hover:text-white'
-                                    }`}
-                                >
-                                    {link.label}
-                                </a>
-                            ))}
+                            {navLinks.map((link) => {
+                                const sectionId = link.href.replace('#', '');
+                                const isActive = activeSection === sectionId;
+                                return (
+                                    <a
+                                        key={link.label}
+                                        href={link.href}
+                                        className={`relative text-[0.938rem] font-medium transition-colors hover:text-[#1a4fd4] ${
+                                            isActive
+                                                ? scrolled ? 'text-[#1a4fd4]' : 'text-white'
+                                                : scrolled ? 'text-[#0a1628]/60' : 'text-white/70'
+                                        }`}
+                                    >
+                                        {link.label}
+                                        <span
+                                            className={`absolute -bottom-1 left-0 h-0.5 rounded-full transition-all duration-300 ${
+                                                isActive
+                                                    ? 'w-full bg-[#1a4fd4]'
+                                                    : 'w-0 bg-[#1a4fd4] group-hover:w-full'
+                                            }`}
+                                            style={{ transitionTimingFunction: 'var(--ease-out-expo)' }}
+                                        />
+                                    </a>
+                                );
+                            })}
                         </div>
 
                         {/* Mobile toggle */}
@@ -248,27 +381,59 @@ export default function Welcome() {
                     </div>
 
                     {/* Mobile menu */}
-                    {mobileMenuOpen && (
-                        <div className="border-t border-[#0a1628]/5 bg-white px-6 py-4 shadow-lg lg:hidden">
-                            {navLinks.map((link) => (
+                    <div
+                        className={`overflow-hidden border-t border-[#0a1628]/5 bg-white shadow-lg transition-all duration-300 lg:hidden ${
+                            mobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0 border-t-0'
+                        }`}
+                        style={{ transitionTimingFunction: 'var(--ease-out-expo)' }}
+                    >
+                        <div className="px-6 py-4">
+                            {navLinks.map((link, i) => (
                                 <a
                                     key={link.label}
                                     href={link.href}
                                     onClick={() => setMobileMenuOpen(false)}
-                                    className="block py-3 text-sm font-medium text-[#0a1628]/70 transition-colors hover:text-[#1a4fd4]"
+                                    className={`block py-3 text-sm font-medium text-[#0a1628]/70 transition-all hover:text-[#1a4fd4] ${
+                                        mobileMenuOpen ? 'translate-x-0 opacity-100' : '-translate-x-4 opacity-0'
+                                    }`}
+                                    style={{
+                                        transitionDelay: mobileMenuOpen ? `${i * 50}ms` : '0ms',
+                                        transitionDuration: '300ms',
+                                    }}
                                 >
                                     {link.label}
                                 </a>
                             ))}
                         </div>
-                    )}
+                    </div>
                 </nav>
 
                 {/* ═══ HERO SECTION ═══ */}
-                <section className="relative min-h-screen overflow-hidden bg-[#0a1628]">
-                    {/* Grid pattern */}
+                <section className="relative h-[80vh] overflow-hidden bg-[#0a1628]">
+                    {/* Background photo with parallax */}
+                    <img
+                        src="/photos/PHOTO-2024-12-22-10-48-11.jpg"
+                        alt=""
+                        aria-hidden="true"
+                        className="absolute inset-0 h-[120%] w-full object-cover object-[center_20%]"
+                        style={{ transform: `translateY(${heroOffset}px)` }}
+                    />
+
+                    {/* Dark overlay — strong left-to-right gradient for text readability */}
                     <div
-                        className="absolute inset-0 opacity-[0.07]"
+                        className="absolute inset-0 bg-gradient-to-r from-[#0a1628]/95 via-[#0a1628]/75 to-[#0a1628]/40"
+                        aria-hidden="true"
+                    />
+
+                    {/* Bottom fade for smooth transition to next section */}
+                    <div
+                        className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#0a1628]/90 to-transparent"
+                        aria-hidden="true"
+                    />
+
+                    {/* Subtle grid pattern over photo */}
+                    <div
+                        className="absolute inset-0 opacity-[0.04]"
                         style={{
                             backgroundImage: `
                                 linear-gradient(rgba(26,79,212,0.5) 1px, transparent 1px),
@@ -276,47 +441,28 @@ export default function Welcome() {
                             `,
                             backgroundSize: '80px 80px',
                         }}
-                    />
-
-                    {/* Diagonal accent */}
-                    <div
-                        className="absolute right-0 bottom-0 h-full w-3/5 bg-gradient-to-bl from-[#1a4fd4]/25 to-transparent"
-                        style={{
-                            clipPath:
-                                'polygon(40% 0, 100% 0, 100% 100%, 0% 100%)',
-                        }}
                         aria-hidden="true"
                     />
 
                     {/* Floating balls */}
                     <div
-                        className="absolute top-[18%] right-[12%] hidden h-36 w-36 rounded-full bg-gradient-to-br from-white/15 to-white/5 lg:block"
-                        style={{
-                            animation: 'float-ball 6s ease-in-out infinite',
-                        }}
-                        aria-hidden="true"
-                    >
-                        <div className="absolute top-0 left-1/2 h-full w-[1.5px] -translate-x-1/2 rotate-[30deg] bg-white/10" />
-                    </div>
-                    <div
-                        className="absolute right-[25%] bottom-[25%] hidden h-12 w-12 rounded-full bg-gradient-to-br from-[#3b82f6]/40 to-[#3b82f6]/10 lg:block"
-                        style={{
-                            animation:
-                                'float-ball 4.5s ease-in-out infinite 1.5s',
-                        }}
+                        className="absolute top-[18%] right-[12%] hidden h-28 w-28 rounded-full bg-gradient-to-br from-white/10 to-white/[0.03] lg:block"
+                        style={{ animation: 'float-ball 6s ease-in-out infinite' }}
                         aria-hidden="true"
                     />
                     <div
-                        className="absolute bottom-[35%] left-[8%] hidden h-20 w-20 rounded-full bg-gradient-to-br from-[#60a5fa]/20 to-transparent lg:block"
-                        style={{
-                            animation:
-                                'float-ball 5s ease-in-out infinite 0.8s',
-                        }}
+                        className="absolute right-[28%] bottom-[22%] hidden h-10 w-10 rounded-full bg-gradient-to-br from-[#3b82f6]/30 to-[#3b82f6]/5 lg:block"
+                        style={{ animation: 'float-ball 4.5s ease-in-out infinite 1.5s' }}
+                        aria-hidden="true"
+                    />
+                    <div
+                        className="absolute bottom-[38%] left-[6%] hidden h-16 w-16 rounded-full bg-gradient-to-br from-[#60a5fa]/15 to-transparent lg:block"
+                        style={{ animation: 'float-ball 5s ease-in-out infinite 0.8s' }}
                         aria-hidden="true"
                     />
 
                     {/* Content */}
-                    <div className="relative mx-auto flex min-h-screen max-w-7xl items-center px-6">
+                    <div className="relative mx-auto flex h-full max-w-7xl items-center px-6">
                         <div className="max-w-3xl pt-24 pb-32 lg:pt-20">
                             {/* Badge */}
                             <div
@@ -340,7 +486,10 @@ export default function Welcome() {
                                 }}
                             >
                                 TTV{' '}
-                                <span className="bg-gradient-to-r from-[#3b82f6] via-[#60a5fa] to-[#93c5fd] bg-clip-text text-transparent">
+                                <span
+                                    className="bg-gradient-to-r from-[#60a5fa] via-[#93c5fd] to-white bg-clip-text text-transparent"
+                                    style={{ filter: 'drop-shadow(0 0 60px rgba(96, 165, 250, 0.3))' }}
+                                >
                                     Merwestad
                                 </span>
                             </h1>
@@ -401,25 +550,22 @@ export default function Welcome() {
 
                 {/* ═══ STATS BAR ═══ */}
                 <section className="relative z-10 bg-white">
-                    <div className="mx-auto max-w-5xl px-6 py-16">
-                        <Reveal>
+                    <div className="mx-auto max-w-5xl px-6">
+                        <div className="-mt-12 rounded-2xl border border-[#0a1628]/[0.06] bg-white p-10 shadow-xl shadow-[#1a4fd4]/[0.06] md:p-12">
                             <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
-                                {[
-                                    { value: '60+', label: 'Jaar actief' },
-                                    { value: '35+', label: 'Leden' },
-                                    { value: '3', label: 'Competitieteams' },
-                                    { value: '2×', label: 'Per week training' },
-                                ].map((stat, i) => (
-                                    <Reveal key={stat.label} delay={i * 80}>
+                                {([
+                                    { value: 60, suffix: '+', label: 'Jaar actief' },
+                                    { value: 35, suffix: '+', label: 'Leden' },
+                                    { value: 3, suffix: '', label: 'Competitieteams' },
+                                    { value: 2, suffix: '×', label: 'Per week training' },
+                                ] as const).map((stat, i) => (
+                                    <Reveal key={stat.label} delay={i * 80} direction="scale">
                                         <div className="text-center">
                                             <div
                                                 className="text-4xl font-bold text-[#1a4fd4] md:text-5xl"
-                                                style={{
-                                                    fontFamily:
-                                                        "'Plus Jakarta Sans', sans-serif",
-                                                }}
+                                                style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
                                             >
-                                                {stat.value}
+                                                <CountUp target={stat.value} suffix={stat.suffix} />
                                             </div>
                                             <div className="mt-2 text-sm font-medium tracking-wide text-[#0a1628]/40 uppercase">
                                                 {stat.label}
@@ -428,7 +574,7 @@ export default function Welcome() {
                                     </Reveal>
                                 ))}
                             </div>
-                        </Reveal>
+                        </div>
                     </div>
                 </section>
 
@@ -446,26 +592,26 @@ export default function Welcome() {
                             />
                         </Reveal>
 
-                        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                             {values.map((item, i) => (
-                                <Reveal key={item.title} delay={i * 100}>
-                                    <div className="group rounded-2xl border border-[#0a1628]/[0.06] bg-white p-7 transition-all duration-300 hover:-translate-y-1 hover:border-[#1a4fd4]/20 hover:shadow-xl hover:shadow-[#1a4fd4]/[0.06]">
-                                        <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[#1a4fd4]/[0.08] text-[#1a4fd4] transition-colors group-hover:bg-[#1a4fd4] group-hover:text-white">
+                                <Reveal key={item.title} delay={i * 120} direction={i === 0 ? 'left' : i === 2 ? 'right' : 'up'}>
+                                    <GlowCard className="rounded-2xl border border-[#0a1628]/[0.06] bg-white p-7 transition-all duration-300 hover:-translate-y-1 hover:border-[#1a4fd4]/20 hover:shadow-xl hover:shadow-[#1a4fd4]/[0.06]">
+                                        <div
+                                            className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[#1a4fd4]/[0.08] text-[#1a4fd4] transition-all group-hover:bg-[#1a4fd4] group-hover:text-white group-hover:rotate-6 group-hover:scale-110"
+                                            style={{ transitionDuration: 'var(--duration-hover)', transitionTimingFunction: 'var(--ease-out-back)' }}
+                                        >
                                             <item.icon className="h-5 w-5" />
                                         </div>
                                         <h3
                                             className="mb-2 text-lg font-bold text-[#0a1628]"
-                                            style={{
-                                                fontFamily:
-                                                    "'Plus Jakarta Sans', sans-serif",
-                                            }}
+                                            style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
                                         >
                                             {item.title}
                                         </h3>
                                         <p className="text-sm leading-relaxed text-[#0a1628]/50">
                                             {item.description}
                                         </p>
-                                    </div>
+                                    </GlowCard>
                                 </Reveal>
                             ))}
                         </div>
@@ -486,46 +632,55 @@ export default function Welcome() {
                             />
                         </Reveal>
 
-                        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-                            {schedule.map((slot, i) => (
-                                <Reveal key={slot.day} delay={i * 80}>
-                                    <div className="group relative overflow-hidden rounded-2xl border border-[#0a1628]/[0.06] bg-[#f8fafc] p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-[#1a4fd4]/[0.06]">
-                                        {/* Top accent bar */}
-                                        <div
-                                            className={`absolute top-0 left-0 h-1 w-full ${slot.color} transition-all duration-300 group-hover:h-1.5`}
-                                        />
+                        <div className="grid gap-6 sm:grid-cols-2">
+                            {schedule.map((slot, i) => {
+                                const dayMap: Record<string, number> = { Dinsdag: 2, Donderdag: 4 };
+                                const isToday = new Date().getDay() === dayMap[slot.day];
+                                return (
+                                    <Reveal key={slot.day} delay={i * 120} direction={i === 0 ? 'left' : 'right'}>
+                                        <GlowCard className={`relative overflow-hidden rounded-2xl border bg-[#f8fafc] p-8 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-[#1a4fd4]/[0.06] ${isToday ? 'border-[#1a4fd4]/25 ring-2 ring-[#1a4fd4]/10' : 'border-[#0a1628]/[0.06]'}`}>
+                                            {/* Left accent bar */}
+                                            <div
+                                                className={`absolute top-0 left-0 h-full w-1.5 ${slot.color}`}
+                                            />
 
-                                        <div className="mt-2 mb-4">
-                                            <h3
-                                                className="text-xl font-bold text-[#0a1628]"
-                                                style={{
-                                                    fontFamily:
-                                                        "'Plus Jakarta Sans', sans-serif",
-                                                }}
-                                            >
-                                                {slot.day}
-                                            </h3>
-                                        </div>
+                                            <div className="ml-4">
+                                                <div className="mb-4 flex items-center gap-3">
+                                                    <h3
+                                                        className="text-xl font-bold text-[#0a1628]"
+                                                        style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+                                                    >
+                                                        {slot.day}
+                                                    </h3>
+                                                    {isToday && (
+                                                        <span className="inline-flex items-center gap-1.5 rounded-full bg-[#1a4fd4]/10 px-3 py-1 text-xs font-semibold text-[#1a4fd4]">
+                                                            <span className="h-2 w-2 animate-pulse rounded-full bg-[#1a4fd4]" />
+                                                            Vanavond!
+                                                        </span>
+                                                    )}
+                                                </div>
 
-                                        <div className="mb-3 flex items-center gap-2 text-[#0a1628]/50">
-                                            <Clock className="h-4 w-4" />
-                                            <span className="text-sm font-medium">
-                                                {slot.time}
-                                            </span>
-                                        </div>
+                                                <div className="mb-3 flex items-center gap-2 text-[#0a1628]/50">
+                                                    <Clock className="h-4 w-4" />
+                                                    <span className="text-sm font-medium">
+                                                        {slot.time}
+                                                    </span>
+                                                </div>
 
-                                        <NetDivider />
+                                                <NetDivider />
 
-                                        <div className="mt-3 flex gap-2">
-                                            {slot.group.map((item: string) => (
-                                                <span className="inline-flex items-center rounded-full bg-[#1a4fd4]/[0.08] px-3 py-1 text-xs font-semibold text-[#1a4fd4]">
-                                                    {item}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </Reveal>
-                            ))}
+                                                <div className="mt-3 flex flex-wrap gap-2">
+                                                    {slot.group.map((item: string) => (
+                                                        <span key={item} className="inline-flex items-center rounded-full bg-[#1a4fd4]/[0.08] px-3 py-1 text-xs font-semibold text-[#1a4fd4]">
+                                                            {item}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </GlowCard>
+                                    </Reveal>
+                                );
+                            })}
                         </div>
 
                         <Reveal delay={400}>
@@ -551,13 +706,22 @@ export default function Welcome() {
 
                         <div className="grid gap-6 lg:grid-cols-3">
                             {teams.map((team, i) => (
-                                <Reveal key={`${team.name}-${team.competition}`} delay={i * 100}>
+                                <Reveal key={`${team.name}-${team.competition}`} delay={i * 120} direction={i === 1 ? 'up' : i === 0 ? 'left' : 'right'}>
                                     <a
                                         href={team.href}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="group flex h-full flex-col rounded-2xl border border-[#0a1628]/[0.06] bg-white p-7 transition-all duration-300 hover:-translate-y-1 hover:border-[#1a4fd4]/20 hover:shadow-xl hover:shadow-[#1a4fd4]/[0.06]"
+                                        className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-[#0a1628]/[0.06] bg-white p-7 transition-all duration-300 hover:-translate-y-1 hover:border-[#1a4fd4]/20 hover:shadow-xl hover:shadow-[#1a4fd4]/[0.06]"
                                     >
+                                        {/* Watermark team number */}
+                                        <span
+                                            className="pointer-events-none absolute -right-3 -bottom-5 text-[120px] font-black leading-none text-[#1a4fd4]/[0.04] transition-all duration-500 select-none group-hover:text-[#1a4fd4]/[0.08] group-hover:-translate-y-1"
+                                            style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}
+                                            aria-hidden="true"
+                                        >
+                                            {i + 1}
+                                        </span>
+
                                         {/* Header */}
                                         <div className="mb-5 flex items-start justify-between">
                                             <div>
@@ -571,7 +735,10 @@ export default function Welcome() {
                                                     {team.competition}
                                                 </p>
                                             </div>
-                                            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-[#1a4fd4]/[0.08] text-[#1a4fd4] transition-colors group-hover:bg-[#1a4fd4] group-hover:text-white">
+                                            <div
+                                                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#1a4fd4]/[0.08] text-[#1a4fd4] transition-all group-hover:bg-[#1a4fd4] group-hover:text-white group-hover:rotate-6 group-hover:scale-110"
+                                                style={{ transitionDuration: 'var(--duration-hover)', transitionTimingFunction: 'var(--ease-out-back)' }}
+                                            >
                                                 <ExternalLink className="h-4 w-4" />
                                             </div>
                                         </div>
@@ -595,8 +762,11 @@ export default function Welcome() {
                                                 {team.players.map((player) => (
                                                     <span
                                                         key={player}
-                                                        className="inline-flex items-center rounded-lg bg-[#0a1628]/[0.04] px-2.5 py-1 text-xs font-medium text-[#0a1628]/70"
+                                                        className="inline-flex items-center gap-1.5 rounded-lg bg-[#0a1628]/[0.04] px-2.5 py-1 text-xs font-medium text-[#0a1628]/70"
                                                     >
+                                                        <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#1a4fd4]/10 text-[8px] font-bold text-[#1a4fd4]">
+                                                            {player[0]}
+                                                        </span>
                                                         {player}
                                                     </span>
                                                 ))}
@@ -611,8 +781,11 @@ export default function Welcome() {
                                                     {team.reserves.map((player) => (
                                                         <span
                                                             key={player}
-                                                            className="inline-flex items-center rounded-lg border border-dashed border-[#0a1628]/10 px-2.5 py-1 text-xs font-medium text-[#0a1628]/45"
+                                                            className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-[#0a1628]/10 px-2.5 py-1 text-xs font-medium text-[#0a1628]/45"
                                                         >
+                                                            <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[#0a1628]/[0.04] text-[8px] font-bold text-[#0a1628]/40">
+                                                                {player[0]}
+                                                            </span>
                                                             {player}
                                                         </span>
                                                     ))}
@@ -621,7 +794,7 @@ export default function Welcome() {
                                         )}
 
                                         {/* Link hint */}
-                                        <div className="mt-5 flex items-center gap-1.5 text-xs font-medium text-[#1a4fd4] opacity-0 transition-opacity group-hover:opacity-100">
+                                        <div className="mt-5 flex items-center gap-1.5 text-xs font-medium text-[#1a4fd4] opacity-0 transition-all duration-300 group-hover:translate-x-1 group-hover:opacity-100">
                                             Bekijk uitslagen
                                             <ChevronRight className="h-3 w-3" />
                                         </div>
@@ -645,21 +818,34 @@ export default function Welcome() {
 
                         <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
                             {/* Satellite image */}
-                            <Reveal>
-                                <div className="overflow-hidden rounded-2xl border border-[#0a1628]/[0.06] shadow-xl shadow-[#1a4fd4]/[0.04]">
+                            <Reveal direction="left">
+                                <div className="group relative overflow-hidden rounded-2xl border border-[#0a1628]/[0.06] shadow-xl shadow-[#1a4fd4]/[0.04]">
                                     <img
                                         src="/map.png"
                                         alt="Satellietbeeld van de locatie van TTV Merwestad bij Mountain Network op het Leerpark in Dordrecht"
-                                        className="h-auto w-full"
+                                        className="h-auto w-full transition-transform duration-700 group-hover:scale-105"
+                                        style={{ transitionTimingFunction: 'var(--ease-out-expo)' }}
                                     />
+                                    <a
+                                        href="https://maps.google.com/?q=Maria+Montessorilaan+3+Dordrecht"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="absolute right-4 bottom-4 inline-flex items-center gap-2 rounded-xl bg-white/90 px-4 py-2.5 text-xs font-semibold text-[#1a4fd4] shadow-lg backdrop-blur-sm transition-all hover:bg-white hover:shadow-xl"
+                                    >
+                                        <MapPin className="h-3.5 w-3.5" />
+                                        Open in Google Maps
+                                    </a>
                                 </div>
                             </Reveal>
 
                             {/* Info */}
                             <div className="space-y-6">
-                                <Reveal delay={100}>
-                                    <div className="group rounded-2xl border border-[#0a1628]/[0.06] bg-[#f8fafc] p-7 transition-all duration-300 hover:-translate-y-1 hover:border-[#1a4fd4]/20 hover:shadow-xl hover:shadow-[#1a4fd4]/[0.06]">
-                                        <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[#1a4fd4]/[0.08] text-[#1a4fd4] transition-colors group-hover:bg-[#1a4fd4] group-hover:text-white">
+                                <Reveal delay={100} direction="right">
+                                    <GlowCard className="rounded-2xl border border-[#0a1628]/[0.06] bg-[#f8fafc] p-7 transition-all duration-300 hover:-translate-y-1 hover:border-[#1a4fd4]/20 hover:shadow-xl hover:shadow-[#1a4fd4]/[0.06]">
+                                        <div
+                                            className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[#1a4fd4]/[0.08] text-[#1a4fd4] transition-all group-hover:bg-[#1a4fd4] group-hover:text-white group-hover:rotate-6 group-hover:scale-110"
+                                            style={{ transitionDuration: 'var(--duration-hover)', transitionTimingFunction: 'var(--ease-out-back)' }}
+                                        >
                                             <Building2 className="h-5 w-5" />
                                         </div>
                                         <h3
@@ -671,12 +857,15 @@ export default function Welcome() {
                                         <p className="text-sm leading-relaxed text-[#0a1628]/50">
                                             Ons gebouw heet Mountain Network en bevindt zich op het Leerpark in Dordrecht. We zitten in Zaal 1 op de begane grond.
                                         </p>
-                                    </div>
+                                    </GlowCard>
                                 </Reveal>
 
-                                <Reveal delay={200}>
-                                    <div className="group rounded-2xl border border-[#0a1628]/[0.06] bg-[#f8fafc] p-7 transition-all duration-300 hover:-translate-y-1 hover:border-[#1a4fd4]/20 hover:shadow-xl hover:shadow-[#1a4fd4]/[0.06]">
-                                        <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[#1a4fd4]/[0.08] text-[#1a4fd4] transition-colors group-hover:bg-[#1a4fd4] group-hover:text-white">
+                                <Reveal delay={200} direction="right">
+                                    <GlowCard className="rounded-2xl border border-[#0a1628]/[0.06] bg-[#f8fafc] p-7 transition-all duration-300 hover:-translate-y-1 hover:border-[#1a4fd4]/20 hover:shadow-xl hover:shadow-[#1a4fd4]/[0.06]">
+                                        <div
+                                            className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[#1a4fd4]/[0.08] text-[#1a4fd4] transition-all group-hover:bg-[#1a4fd4] group-hover:text-white group-hover:rotate-6 group-hover:scale-110"
+                                            style={{ transitionDuration: 'var(--duration-hover)', transitionTimingFunction: 'var(--ease-out-back)' }}
+                                        >
                                             <Car className="h-5 w-5" />
                                         </div>
                                         <h3
@@ -688,12 +877,15 @@ export default function Welcome() {
                                         <p className="text-sm leading-relaxed text-[#0a1628]/50">
                                             Je kunt gratis parkeren aan de achterkant van het gebouw. Let op: de ingang van het gebouw bevindt zich aan de voorkant, aan de kant van het Leerpark.
                                         </p>
-                                    </div>
+                                    </GlowCard>
                                 </Reveal>
 
-                                <Reveal delay={300}>
-                                    <div className="group rounded-2xl border border-[#0a1628]/[0.06] bg-[#f8fafc] p-7 transition-all duration-300 hover:-translate-y-1 hover:border-[#1a4fd4]/20 hover:shadow-xl hover:shadow-[#1a4fd4]/[0.06]">
-                                        <div className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[#1a4fd4]/[0.08] text-[#1a4fd4] transition-colors group-hover:bg-[#1a4fd4] group-hover:text-white">
+                                <Reveal delay={300} direction="right">
+                                    <GlowCard className="rounded-2xl border border-[#0a1628]/[0.06] bg-[#f8fafc] p-7 transition-all duration-300 hover:-translate-y-1 hover:border-[#1a4fd4]/20 hover:shadow-xl hover:shadow-[#1a4fd4]/[0.06]">
+                                        <div
+                                            className="mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-[#1a4fd4]/[0.08] text-[#1a4fd4] transition-all group-hover:bg-[#1a4fd4] group-hover:text-white group-hover:rotate-6 group-hover:scale-110"
+                                            style={{ transitionDuration: 'var(--duration-hover)', transitionTimingFunction: 'var(--ease-out-back)' }}
+                                        >
                                             <MapPin className="h-5 w-5" />
                                         </div>
                                         <h3
@@ -705,7 +897,7 @@ export default function Welcome() {
                                         <p className="text-sm leading-relaxed text-[#0a1628]/50">
                                             Loop vanaf de parkeerplaats om het gebouw heen naar de voorzijde (kant Leerpark). Daar vind je de hoofdingang van Mountain Network.
                                         </p>
-                                    </div>
+                                    </GlowCard>
                                 </Reveal>
                             </div>
                         </div>
@@ -994,8 +1186,18 @@ export default function Welcome() {
                     </div>
                 </section>
 
+                {/* ═══ BACK TO TOP ═══ */}
+                <button
+                    type="button"
+                    onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                    className={`fixed right-6 bottom-6 z-40 flex h-11 w-11 items-center justify-center rounded-full bg-[#1a4fd4] text-white shadow-lg shadow-[#1a4fd4]/25 transition-all duration-300 hover:bg-[#1539a3] hover:shadow-xl ${showBackToTop ? 'translate-y-0 opacity-100' : 'translate-y-4 opacity-0 pointer-events-none'}`}
+                    aria-label="Terug naar boven"
+                >
+                    <ArrowUp className="h-4 w-4" />
+                </button>
+
                 {/* ═══ FOOTER ═══ */}
-                <footer className="bg-white py-20">
+                <footer className="border-t border-[#0a1628]/[0.06] bg-[#f8fafc] py-20">
                     <div className="mx-auto max-w-7xl px-6">
                         <div className="grid gap-12 sm:grid-cols-2 lg:grid-cols-4">
                             {/* Brand column */}
