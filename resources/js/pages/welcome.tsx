@@ -22,10 +22,11 @@ import ContactController from '@/actions/App/Http/Controllers/ContactController'
 
 /* ─── Reduced motion preference ─── */
 function useReducedMotion() {
-    const [reduced, setReduced] = useState(false);
+    const [reduced, setReduced] = useState(
+        () => typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    );
     useEffect(() => {
         const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
-        setReduced(mq.matches);
         const handler = (e: MediaQueryListEvent) => setReduced(e.matches);
         mq.addEventListener('change', handler);
         return () => mq.removeEventListener('change', handler);
@@ -126,10 +127,9 @@ function CountUp({ target, suffix = '' }: { target: number; suffix?: string }) {
     useEffect(() => {
         if (!inView) return;
         if (reducedMotion) {
-            setCount(target);
+            requestAnimationFrame(() => setCount(target));
             return;
         }
-        let start = 0;
         const duration = 1500;
         const startTime = performance.now();
 
@@ -137,8 +137,7 @@ function CountUp({ target, suffix = '' }: { target: number; suffix?: string }) {
             const elapsed = now - startTime;
             const progress = Math.min(elapsed / duration, 1);
             const eased = 1 - Math.pow(1 - progress, 4);
-            start = Math.round(eased * target);
-            setCount(start);
+            setCount(Math.round(eased * target));
             if (progress < 1) requestAnimationFrame(step);
         }
         requestAnimationFrame(step);
