@@ -251,7 +251,7 @@ export default function Welcome() {
         {
             icon: Trophy,
             title: 'Competitie',
-            description: 'Met 3 teams strijden we in de regionale competities.',
+            description: 'Met 3 teams strijden we in de regionale duocompetitie.',
         },
     ];
 
@@ -260,34 +260,34 @@ export default function Welcome() {
             name: 'Merwestad 1',
             competition: 'West - Senioren DUO',
             division: '4e klasse',
-            poule: 'Poule F',
+            poule: 'Poule G',
             players: ['Gert-Jan', 'Stefan'],
             reserves: [],
-            href: 'https://ttapp.nl/#/poule/5021159',
+            href: 'https://ttapp.nl/poule/5022335',
         },
         {
             name: 'Merwestad 2',
             competition: 'West - Senioren DUO',
-            division: '5e klasse',
-            poule: 'Poule E',
-            players: ['Jaap', 'Gerrit', 'Arjan'],
-            reserves: ['Stefan', 'Ruud'],
-            href: 'https://ttapp.nl/#/poule/5021172',
+            division: '6e klasse',
+            poule: 'Poule F',
+            players: ['Jaap', 'Gerrit', 'Desmond', 'Arjan'],
+            reserves: [],
+            href: 'https://ttapp.nl/poule/5022362',
         },
         {
-            name: 'Merwestad 1',
-            competition: 'West - Senioren regulier',
-            division: '5e klasse',
+            name: 'Merwestad 3',
+            competition: 'West - Senioren DUO',
+            division: '7e klasse',
             poule: 'Poule A',
-            players: ['Lenny', 'Stefan', 'Rob', 'Ruud'],
+            players: ['Rob', 'Ruud', 'Henk', 'Abdol Majid'],
             reserves: [],
-            href: 'https://ttapp.nl/#/poule/5021124',
+            href: 'https://ttapp.nl/poule/5022369',
         },
     ];
 
     const schedule = [
-        { day: 'Dinsdag', time: '19:30 – 22:00', group: ['Vrij spelen', 'reguliere competitie'], color: 'bg-[#3b82f6]' },
-        { day: 'Donderdag', time: '19:30 – 22:00', group: ['Vrij spelen', 'duo competitie'], color: 'bg-[#93c5fd]' },
+        { day: 'Dinsdag', time: '19:30 – 22:00', group: ['Vrij spelen', 'competitie'], color: 'bg-[#3b82f6]' },
+        { day: 'Donderdag', time: '19:30 – 22:00', group: ['Vrij spelen', 'competitie'], color: 'bg-[#93c5fd]' },
     ];
 
     return (
@@ -700,7 +700,7 @@ export default function Welcome() {
                             <SectionHeading
                                 eyebrow="Competitie"
                                 title="Onze teams"
-                                description="Met drie teams zijn we actief in de regionale competities van de NTTB. Bekijk de uitslagen en standen via de links bij elk team."
+                                description="Met drie teams zijn we actief in de regionale duocompetitie van de NTTB. Bekijk de uitslagen en standen via de links bij elk team."
                             />
                         </Reveal>
 
